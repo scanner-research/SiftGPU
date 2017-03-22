@@ -11,10 +11,10 @@
 //	documentation for educational, research and non-profit purposes, without
 //	fee, and without a written agreement is hereby granted, provided that the
 //	above copyright notice and the following paragraph appear in all copies.
-//	
+//
 //	The University of North Carolina at Chapel Hill make no representations
 //	about the suitability of this software for any purpose. It is provided
-//	'as is' without express or implied warranty. 
+//	'as is' without express or implied warranty.
 //
 //	Please send BUG REPORTS to ccwu@cs.unc.edu
 //
@@ -32,18 +32,25 @@ using namespace std;
 
 
 #include "GlobalUtil.h"
-#include "CuTexImage.h" 
+#include "CuTexImage.h"
 #include "SiftGPU.h"
 #include "ProgramCU.h"
 #include "SiftMatchCU.h"
-
+#include <stdio.h>
 
 SiftMatchCU::SiftMatchCU(int max_sift):SiftMatchGPU()
 {
+  const char* device_s = std::getenv("VSFM_DEVICE");
+  if (std::string(device_s) != "") {
+    std::cout << "Setting device to " << device_s;
+    GlobalUtil::_DeviceIndex = std::atoi(device_s);
+    CheckCudaDevice(GlobalUtil::_DeviceIndex);
+  }
+
 	_num_sift[0] = _num_sift[1] = 0;
 	_id_sift[0] = _id_sift[1] = 0;
 	_have_loc[0] = _have_loc[1] = 0;
-	_max_sift = max_sift <=0 ? 4096 : ((max_sift + 31)/ 32 * 32) ; 
+	_max_sift = max_sift <=0 ? 4096 : ((max_sift + 31)/ 32 * 32) ;
 	_initialized = 0;
 }
 
@@ -62,14 +69,15 @@ int  SiftMatchCU::CheckCudaDevice(int device)
 
 void SiftMatchCU::InitSiftMatch()
 {
+
 	if(_initialized) return;
-    GlobalUtil::_GoodOpenGL = max(GlobalUtil::_GoodOpenGL, 1); 
-	_initialized = 1; 
+    GlobalUtil::_GoodOpenGL = max(GlobalUtil::_GoodOpenGL, 1);
+	_initialized = 1;
 }
 
 
 void SiftMatchCU::SetDescriptors(int index, int num, const unsigned char* descriptors, int id)
-{	
+{
 	if(_initialized == 0) return;
 	if (index > 1) index = 1;
 	if (index < 0) index = 0;
@@ -78,14 +86,14 @@ void SiftMatchCU::SetDescriptors(int index, int num, const unsigned char* descri
 	if(id !=-1 && id == _id_sift[index]) return ;
 	_id_sift[index] = id;
 	if(num > _max_sift) num = _max_sift;
-	_num_sift[index] = num; 
+	_num_sift[index] = num;
 	_texDes[index].InitTexture(8 * num, 1, 4);
 	_texDes[index].CopyFromHost((void*)descriptors);
 }
 
 
 void SiftMatchCU::SetDescriptors(int index, int num, const float* descriptors, int id)
-{	
+{
 	if(_initialized == 0) return;
 	if (index > 1) index = 1;
 	if (index < 0) index = 0;
@@ -173,4 +181,3 @@ int SiftMatchCU::GetBestMatch(int max_match, int match_buffer[][2], float distma
 }
 
 #endif
-

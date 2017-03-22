@@ -2,7 +2,7 @@
 //	File:		SiftGPU.cpp
 //	Author:		Changchang Wu
 //	Description :	Implementation of the SIFTGPU classes.
-//					SiftGPU:	The SiftGPU Tool.  
+//					SiftGPU:	The SiftGPU Tool.
 //					SiftGPUEX:	SiftGPU + viewer
 //					SiftParam:	Sift Parameters
 //
@@ -13,10 +13,10 @@
 //	documentation for educational, research and non-profit purposes, without
 //	fee, and without a written agreement is hereby granted, provided that the
 //	above copyright notice and the following paragraph appear in all copies.
-//	
+//
 //	The University of North Carolina at Chapel Hill make no representations
 //	about the suitability of this software for any purpose. It is provided
-//	'as is' without express or implied warranty. 
+//	'as is' without express or implied warranty.
 //
 //	Please send BUG REPORTS to ccwu@cs.unc.edu
 //
@@ -55,10 +55,10 @@ using namespace std;
 
 
 ////
-#if  defined(_WIN32) 
+#if  defined(_WIN32)
 	#include "direct.h"
-	#pragma warning (disable : 4786) 
-	#pragma warning (disable : 4996) 
+	#pragma warning (disable : 4786)
+	#pragma warning (disable : 4996)
 #else
 	//compatible with linux
 	#define _stricmp strcasecmp
@@ -82,7 +82,7 @@ using namespace std;
 class ImageList:public std::vector<std::string> {};
 
 SiftGPU::SiftGPU(int np)
-{ 
+{
 	_texImage = new GLTexInput;
 	_imgpath =  new char[_MAX_PATH];
 	_outpath = new char[_MAX_PATH];
@@ -96,7 +96,7 @@ SiftGPU::SiftGPU(int np)
 
 
 
-SiftGPUEX::SiftGPUEX() 
+SiftGPUEX::SiftGPUEX()
 {
 	_view = _sub_view = 0;
 	_view_debug = 0;
@@ -107,12 +107,12 @@ SiftGPUEX::SiftGPUEX()
 
 void* SiftGPU::operator new (size_t  size){
   void * p = malloc(size);
-  if (p == 0)  
+  if (p == 0)
   {
 	  const std::bad_alloc ba;
-	  throw ba; 
+	  throw ba;
   }
-  return p; 
+  return p;
 }
 
 
@@ -122,13 +122,13 @@ void SiftGPUEX::RandomizeColor()
 	for(int i = 0; i < COLOR_NUM*3; i+=3)
 	{
 		hsv[0] = (rand()%100)*0.01f; //i/float(COLOR_NUM);
-		HSVtoRGB(hsv, _colors+i);		
+		HSVtoRGB(hsv, _colors+i);
 	}
 }
 
 SiftGPU::~SiftGPU()
 {
-	if(_pyramid) delete _pyramid; 
+	if(_pyramid) delete _pyramid;
 	delete _texImage;
 	delete _list;
     delete[] _imgpath;
@@ -148,7 +148,7 @@ inline void SiftGPU::InitSiftGPU()
 	{
 		GlobalUtil::_UseCUDA = 0;
 		std::cerr	<< "---------------------------------------------------------------------------\n"
-					<< "CUDA not supported in this binary! To enable it, please use SiftGPU_CUDA_Enable\n" 
+					<< "CUDA not supported in this binary! To enable it, please use SiftGPU_CUDA_Enable\n"
 					<< "solution for VS2005+ or set siftgpu_enable_cuda to 1 in makefile\n"
 					<< "----------------------------------------------------------------------------\n";
 	}
@@ -165,26 +165,26 @@ inline void SiftGPU::InitSiftGPU()
 
     if(GlobalUtil::_UseCUDA && !PyramidCU::CheckCudaDevice(GlobalUtil::_DeviceIndex))
     {
-        std::cerr << "Switch from CUDA to OpenGL\n"; 
+        std::cerr << "Switch from CUDA to OpenGL\n";
         GlobalUtil::_UseCUDA = 0;
     }
 #endif
 
-	if(GlobalUtil::_verbose)	std::cout   <<"\n[SiftGPU Language]:\t" 
-                                            << (GlobalUtil::_UseCUDA? "CUDA" : 
+	if(GlobalUtil::_verbose)	std::cout   <<"\n[SiftGPU Language]:\t"
+                                            << (GlobalUtil::_UseCUDA? "CUDA" :
                                             (GlobalUtil::_UseOpenCL? "OpenCL" : "GLSL")) <<"\n";
 
 #if defined(CUDA_SIFTGPU_ENABLED)
 	if(GlobalUtil::_UseCUDA)
 		_pyramid = new PyramidCU(*this);
-	else 
+	else
 #endif
 #if defined(CL_SIFTGPU_ENABLED)
     if(GlobalUtil::_UseOpenCL)
         _pyramid = new PyramidCL(*this);
-    else 
+    else
 #endif
-	if(GlobalUtil::_usePackedTex) 
+	if(GlobalUtil::_usePackedTex)
 		_pyramid = new PyramidPacked(*this);
 	else
 		_pyramid = new PyramidNaive(*this);
@@ -238,7 +238,7 @@ int  SiftGPU::RunSIFT( int width,  int height, const void * data, unsigned int g
 			_image_loaded = 2; //gldata;
 			GlobalUtil::StopTimer();
 			_timing[0] = GlobalUtil::GetElapsedTime();
-			
+
 			//if the size of image is different, the pyramid need to be reallocated.
 			GlobalUtil::StartTimer("Initialize Pyramid");
 			_pyramid->InitPyramid(width, height, _texImage->_down_sampled);
@@ -305,7 +305,7 @@ int SiftGPU::RunSIFT()
 	//process input image file
 	if( _image_loaded ==0)
 	{
-		int width, height; 
+		int width, height;
 		//load and try down-sample on cpu
 		GlobalUtil::StartTimer("Load Input Image");
 		if(!_texImage->LoadImageFile(_imgpath, width, height)) return 0;
@@ -332,7 +332,7 @@ int SiftGPU::RunSIFT()
 			_timing[0] = _timing[1] = 0;
 		}else
 		{//2
-			_image_loaded = 1; 
+			_image_loaded = 1;
 		}
 	}
 
@@ -351,9 +351,9 @@ int SiftGPU::RunSIFT()
 
 	//write output once if there is only one input
 	if(_outpath[0] ){   SaveSIFT(_outpath);	_outpath[0] = 0;}
-	
-	//terminate the process when -exit is provided. 
-	if(GlobalUtil::_ExitAfterSIFT && GlobalUtil::_UseSiftGPUEX) exit(0); 
+
+	//terminate the process when -exit is provided.
+	if(GlobalUtil::_ExitAfterSIFT && GlobalUtil::_UseSiftGPUEX) exit(0);
 
 	timer.StopTimer();
 	if(GlobalUtil::_verbose)std::cout<<endl;
@@ -367,7 +367,7 @@ void SiftGPU::SetKeypointList(int num, const SiftKeypoint * keys, int keys_have_
 	_pyramid->SetKeypointList(num, (const float*)keys, 0, keys_have_orientation);
 }
 
-void SiftGPUEX::DisplayInput() 
+void SiftGPUEX::DisplayInput()
 {
 	if(_texImage==NULL) return;
     _texImage->VerifyTexture();
@@ -400,7 +400,7 @@ void SiftGPU::SetVerbose(int verbose)
 		//trick for disabling all output (still keeps the timing level)
 		GlobalUtil::_verbose = 0;
 		GlobalUtil::_timingS = 1;
-	}else 
+	}else
 	{
 		GlobalUtil::_verbose = verbose>0;
 		GlobalUtil::_timingS = verbose>1;
@@ -424,14 +424,14 @@ SiftParam::SiftParam()
 
 float SiftParam::GetInitialSmoothSigma(int octave_min)
 {
-	float	sa = _sigma0 * powf(2.0f, float(_level_min)/float(_dog_level_num)) ; 
+	float	sa = _sigma0 * powf(2.0f, float(_level_min)/float(_dog_level_num)) ;
 	float   sb = _sigman / powf(2.0f,  float(octave_min)) ;//
 	float   sigma_skip0 = sa > sb + 0.001?sqrt(sa*sa - sb*sb): 0.0f;
-	return  sigma_skip0; 
+	return  sigma_skip0;
 }
 
 void SiftParam::ParseSiftParam()
-{ 
+{
 
 	if(_dog_level_num ==0) _dog_level_num = 3;
 	if(_level_max ==0) _level_max = _dog_level_num + 1;
@@ -449,8 +449,8 @@ void SiftParam::ParseSiftParam()
 	float dsigma0 = _sigma0 * sqrt (1.0f - 1.0f / (_sigmak*_sigmak) ) ;
 	float sa, sb;
 
- 
-	sa = _sigma0 * powf(_sigmak, (float)_level_min) ; 
+
+	sa = _sigma0 * powf(_sigmak, (float)_level_min) ;
 	sb = _sigman / powf(2.0f,   (float)GlobalUtil::_octave_min_default) ;//
 
 	_sigma_skip0 = sa>sb+ 0.001?sqrt(sa*sa - sb*sb): 0.0f;
@@ -515,7 +515,7 @@ void SiftGPUEX::DisplayOctave(void (*UseDisplayShader)(), int i)
 		glPopMatrix();
 
 		gx++;
-		if(gx>=grid_sz) 
+		if(gx>=grid_sz)
 		{
 			gx =0;
 			gy++;
@@ -545,7 +545,7 @@ void SiftGPUEX::DisplayPyramid( void (*UseDisplayShader)(), int dataName, int ns
 
 	for(int i = _pyramid->_octave_min; i < _pyramid->_octave_min+_pyramid->_octave_num; i++)
 	{
-	
+
 		nstep = i==_pyramid->_octave_min? grid_sz: _level_num;
 		dx = 0;
 		UseDisplayShader();
@@ -554,7 +554,7 @@ void SiftGPUEX::DisplayPyramid( void (*UseDisplayShader)(), int dataName, int ns
 			GLTexImage * tex = _pyramid->GetLevelTexture(i, j, dataName);
 			if(tex->GetImgWidth() == 0 || tex->GetImgHeight() == 0) continue;
 			stepx = tex->GetImgWidth();
-			stepy = tex->GetImgHeight();	
+			stepy = tex->GetImgHeight();
 			////
 			if(j == _level_min + nskip1 + nstep)
 			{
@@ -622,7 +622,7 @@ void SiftGPUEX::DisplaySIFT()
 		DisplayPyramid(ShaderMan::UseShaderDisplayGaussian, SiftPyramid::DATA_GAUSSIAN);
 		break;
 	case 2:
-		DisplayOctave(ShaderMan::UseShaderDisplayGaussian, _sub_view);	
+		DisplayOctave(ShaderMan::UseShaderDisplayGaussian, _sub_view);
 		break;
 	case 3:
 		DisplayLevel(ShaderMan::UseShaderDisplayGaussian, _sub_view);
@@ -716,7 +716,7 @@ void SiftGPU::PrintUsage()
 void SiftGPU::ParseParam(int argc, char **argv)
 {
     #define CHAR1_TO_INT(x)         ((x >= 'A' && x <= 'Z') ? x + 32 : x)
-    #define CHAR2_TO_INT(str, i)    (str[i] ? CHAR1_TO_INT(str[i]) + (CHAR1_TO_INT(str[i+1]) << 8) : 0)  
+    #define CHAR2_TO_INT(str, i)    (str[i] ? CHAR1_TO_INT(str[i]) + (CHAR1_TO_INT(str[i+1]) << 8) : 0)
     #define CHAR3_TO_INT(str, i)    (str[i] ? CHAR1_TO_INT(str[i]) + (CHAR2_TO_INT(str, i + 1) << 8) : 0)
     #define STRING_TO_INT(str)      (CHAR1_TO_INT(str[0]) +  (CHAR3_TO_INT(str, 1) << 8))
 
@@ -760,6 +760,11 @@ void SiftGPU::ParseParam(int argc, char **argv)
     #define MAKEINT3(a, b, c)       (MAKEINT1(a) + (MAKEINT2(b, c) << 8))
     #define MAKEINT4(a, b, c, d)    (MAKEINT1(a) + (MAKEINT3(b, c, d) << 8))
 
+  const char* device_s = std::getenv("VSFM_DEVICE");
+  if (std::string(device_s) != "") {
+    std::cout << "Setting device to " << device_s;
+    GlobalUtil::_DeviceIndex = std::atoi(device_s);
+  }
 
 	char* arg, *param, * opt;
 	int  setMaxD = 0, opti;
@@ -770,34 +775,34 @@ void SiftGPU::ParseParam(int argc, char **argv)
 		opt = arg+1;
         opti = STRING_TO_INT(opt);
 		param = argv[i+1];
- 
+
         ////////////////////////////////
         switch(opti)
         {
         case MAKEINT1(h):
         case MAKEINT4(h, e, l, p):
 			PrintUsage();
-            break;            
+            break;
         case MAKEINT4(c, u, d, a):
 #if defined(CUDA_SIFTGPU_ENABLED)
 
-            if(!_initialized) 
+            if(!_initialized)
             {
 			    GlobalUtil::_UseCUDA = 1;
-                int device =  -1; 
+                int device =  -1;
 			    if(i+1 <argc && sscanf(param, "%d", &device) && device >=0)
                 {
-                    GlobalUtil::_DeviceIndex = device; 
+                    GlobalUtil::_DeviceIndex = device;
                     i++;
                 }
             }
 #else
  		std::cerr	<< "---------------------------------------------------------------------------\n"
-					<< "CUDA not supported in this binary! To enable it, please use SiftGPU_CUDA_Enable\n" 
+					<< "CUDA not supported in this binary! To enable it, please use SiftGPU_CUDA_Enable\n"
 					<< "solution for VS2005+ or set siftgpu_enable_cuda to 1 in makefile\n"
 					<< "----------------------------------------------------------------------------\n";
 #endif
-            break;  
+            break;
         case MAKEINT2(c, l):
 #if defined(CL_SIFTGPU_ENABLED)
             if(!_initialized) GlobalUtil::_UseOpenCL = 1;
@@ -810,17 +815,17 @@ void SiftGPU::ParseParam(int argc, char **argv)
 
         case MAKEINT4(p, a, c, k):
 			if(!_initialized) GlobalUtil::_usePackedTex = 1;
-            break;            
+            break;
         case MAKEINT4(u, n, p, a): //unpack
-			if(!_initialized) 
+			if(!_initialized)
             {
                 GlobalUtil::_usePackedTex = 0;
                 if(!setMaxD) GlobalUtil::_texMaxDim = 2560;
             }
-            break;            
+            break;
         case MAKEINT4(l, c, p, u):
         case MAKEINT2(l, c):
-            if(!_initialized) 
+            if(!_initialized)
             {
 			    int gskip = -1;
 			    if(i+1 <argc)	sscanf(param, "%d", &gskip);
@@ -832,78 +837,78 @@ void SiftGPU::ParseParam(int argc, char **argv)
 				    GlobalUtil::_ListGenGPU = 0;
 			    }
             }
-            break;            
+            break;
         case MAKEINT4(p, r, e, p):
 			GlobalUtil::_PreProcessOnCPU = 1;
-            break;            
+            break;
         case MAKEINT4(n, o, p, r): //noprep
 			GlobalUtil::_PreProcessOnCPU = 0;
-            break;            
+            break;
         case MAKEINT4(f, b, o, 1):
 			FrameBufferObject::UseSingleFBO =1;
-            break;            
+            break;
         case MAKEINT4(f, b, o, s):
 			FrameBufferObject::UseSingleFBO = 0;
-            break;            
+            break;
 		case MAKEINT2(s, d):
 			if(!_initialized) GlobalUtil::_DescriptorPPT =0;
-            break;            
+            break;
         case MAKEINT3(u, n, n):
 			GlobalUtil::_NormalizedSIFT =0;
-            break;    
+            break;
         case MAKEINT4(n, d, e, s):
 			GlobalUtil::_NormalizedSIFT =1;
-            break;  
+            break;
         case MAKEINT1(b):
 			GlobalUtil::_BinarySIFT = 1;
-            break;            
+            break;
         case MAKEINT4(t, i, g, h): //tight
 			GlobalUtil::_ForceTightPyramid = 1;
-            break;            
+            break;
         case MAKEINT4(e, x, i, t):
 			GlobalUtil::_ExitAfterSIFT = 1;
-            break;            
+            break;
         case MAKEINT2(d, i):
 			GlobalUtil::_UseDynamicIndexing = 1;
-            break;            
+            break;
         case MAKEINT4(s, i, g, n):
             if(!_initialized || GlobalUtil::_UseCUDA) GlobalUtil::_KeepExtremumSign = 1;
-            break;    
+            break;
 		case MAKEINT1(m):
         case MAKEINT2(m, o):
-            if(!_initialized) 
+            if(!_initialized)
             {
 			    int mo = 2; //default multi-orientation
 			    if(i+1 <argc)	sscanf(param, "%d", &mo);
 			    //at least two orientation
 			    GlobalUtil::_MaxOrientation = min(max(1, mo), 4);
             }
-            break;            
+            break;
         case MAKEINT3(m, 2, p):
-            if(!_initialized) 
+            if(!_initialized)
             {
 			    GlobalUtil::_MaxOrientation = 2;
 			    GlobalUtil::_OrientationPack2 = 1;
             }
-            break;            
+            break;
         case MAKEINT1(s):
-            if(!_initialized) 
+            if(!_initialized)
             {
                 int sp = 1; //default refinement
                 if(i+1 <argc)	sscanf(param, "%d", &sp);
                 //at least two orientation
                 GlobalUtil::_SubpixelLocalization = min(max(0, sp),5);
             }
-            break;            
+            break;
         case MAKEINT4(o, f, i, x):
 			GlobalUtil::_FixedOrientation = (_stricmp(opt, "ofix")==0);
-            break;            
+            break;
 		case MAKEINT4(l, o, w, e): // loweo
 			GlobalUtil::_LoweOrigin = 1;
-            break;              
+            break;
         case MAKEINT4(n, a, r, r): // narrow
 			GlobalUtil::_NarrowFeatureTex = 1;
-            break;            
+            break;
         case MAKEINT4(d, e, b, u): // debug
 			GlobalUtil::_debug = 1;
             break;
@@ -935,11 +940,11 @@ void SiftGPU::ParseParam(int argc, char **argv)
                 {
                     _list->push_back(argv[++i]);
                 }
-                break;            
+                break;
             case MAKEINT2(i, l):
                 LoadImageList(param);
                 i++;
-                break;            
+                break;
             case MAKEINT1(o):
                 strcpy(_outpath, param);
                 i++;
@@ -953,8 +958,8 @@ void SiftGPU::ParseParam(int argc, char **argv)
                         i++;
                     }
                 }
-                break;  
-            case MAKEINT2(o, t): 
+                break;
+            case MAKEINT2(o, t):
                 {
                     float factor = 0.0f;
                     if(sscanf(param, "%f", &factor) && factor>0 )
@@ -962,9 +967,9 @@ void SiftGPU::ParseParam(int argc, char **argv)
                         GlobalUtil::_MulitiOrientationThreshold  = factor;
                         i++;
                     }
-                    break;                
+                    break;
                 }
-            case MAKEINT1(w): 
+            case MAKEINT1(w):
                 {
                     float factor = 0.0f;
                     if(sscanf(param, "%f", &factor) && factor>0 )
@@ -972,9 +977,9 @@ void SiftGPU::ParseParam(int argc, char **argv)
                         GlobalUtil::_OrientationWindowFactor  = factor;
                         i++;
                     }
-                    break;                
+                    break;
                 }
-            case MAKEINT2(d, w): 
+            case MAKEINT2(d, w):
                 {
                     float factor = 0.0f;
                     if(sscanf(param, "%f", &factor) && factor > 0 )
@@ -982,9 +987,9 @@ void SiftGPU::ParseParam(int argc, char **argv)
                         GlobalUtil::_DescriptorWindowFactor  = factor;
                         i++;
                     }
-                    break;                
+                    break;
                 }
-            case MAKEINT2(f, o): 
+            case MAKEINT2(f, o):
                 {
                     int first_octave = -3;
                     if(sscanf(param, "%d", &first_octave) && first_octave >=-2 )
@@ -994,7 +999,7 @@ void SiftGPU::ParseParam(int argc, char **argv)
                     }
                     break;
                 }
-            case MAKEINT2(n, o): 
+            case MAKEINT2(n, o):
                 if(!_initialized)
                 {
                     int octave_num=-1;
@@ -1009,7 +1014,7 @@ void SiftGPU::ParseParam(int argc, char **argv)
                     }
                 }
                 break;
-            case MAKEINT1(t): 
+            case MAKEINT1(t):
                 {
                     float threshold = 0.0f;
                     if(sscanf(param, "%f", &threshold) && threshold >0 && threshold < 0.5f)
@@ -1017,7 +1022,7 @@ void SiftGPU::ParseParam(int argc, char **argv)
                         SiftParam::_dog_threshold = threshold;
                         i++;
                     }
-                    break;                
+                    break;
                 }
             case MAKEINT1(e):
                 {
@@ -1027,9 +1032,9 @@ void SiftGPU::ParseParam(int argc, char **argv)
                         SiftParam::_edge_threshold = threshold;
                         i++;
                     }
-                    break;                
+                    break;
                 }
-            case MAKEINT1(d): 
+            case MAKEINT1(d):
                 {
                     int num = 0;
                     if(sscanf(param, "%d", &num) && num >=1 && num <=10)
@@ -1039,7 +1044,7 @@ void SiftGPU::ParseParam(int argc, char **argv)
                     }
                     break;
                 }
-            case MAKEINT2(f, s): 
+            case MAKEINT2(f, s):
                 {
                     int num = 0;
                     if(sscanf(param, "%d", &num) && num >=1)
@@ -1049,7 +1054,7 @@ void SiftGPU::ParseParam(int argc, char **argv)
                     }
                     break;
                 }
-            case MAKEINT1(p): 
+            case MAKEINT1(p):
                 {
                     int w =0, h=0;
                     if(sscanf(param, "%dx%d", &w, &h) == 2 && w >0 &&  h>0)
@@ -1058,7 +1063,7 @@ void SiftGPU::ParseParam(int argc, char **argv)
                         GlobalParam::_InitPyramidHeight = h;
                         i++;
                     }
-                    break;                
+                    break;
                 }
             case MAKEINT4(w, i, n, p): //winpos
                 {
@@ -1069,15 +1074,15 @@ void SiftGPU::ParseParam(int argc, char **argv)
                         GlobalParam::_WindowInitY = y;
                         i++;
                     }
-                    break;                
+                    break;
                 }
             case MAKEINT4(d, i, s, p): //display
                 {
                     GlobalParam::_WindowDisplay = param;
                     i++;
-                    break;                
+                    break;
                 }
-            case MAKEINT2(l, m): 
+            case MAKEINT2(l, m):
                 {
                     int num = 0;
                     if(sscanf(param, "%d", &num) && num >=1000)
@@ -1085,9 +1090,9 @@ void SiftGPU::ParseParam(int argc, char **argv)
                         GlobalParam::_MaxLevelFeatureNum = num;
                         i++;
                     }
-                    break;                
+                    break;
                 }
-            case MAKEINT3(l, m, p): 
+            case MAKEINT3(l, m, p):
                 {
                     float num = 0.0f;
                     if(sscanf(param, "%f", &num) && num >=0.001)
@@ -1095,7 +1100,7 @@ void SiftGPU::ParseParam(int argc, char **argv)
                         GlobalParam::_MaxFeaturePercent = num;
                         i++;
                     }
-                    break;                
+                    break;
                 }
             case MAKEINT3(t, c, 2): //downward
             case MAKEINT3(t, c, 3):
@@ -1114,7 +1119,7 @@ void SiftGPU::ParseParam(int argc, char **argv)
                         GlobalParam::_FeatureCountThreshold = num;
                         i++;
                     }
-                    break;                
+                    break;
                 }
             case MAKEINT1(v):
                 {
@@ -1123,30 +1128,30 @@ void SiftGPU::ParseParam(int argc, char **argv)
                     {
                         SetVerbose(num);
                     }
-                    break;                
+                    break;
                 }
-            case MAKEINT4(m, a, x, d):   
+            case MAKEINT4(m, a, x, d):
                 {
                     int num = 0;
                     if(sscanf(param, "%d", &num) && num > 0)
                     {
-                        GlobalUtil::_texMaxDim = num; 
+                        GlobalUtil::_texMaxDim = num;
                         setMaxD = 1;
                     }
                     break;
-                } 
-           case MAKEINT4(m, i, n, d):   
+                }
+           case MAKEINT4(m, i, n, d):
                 {
                     int num = 0;
                     if(sscanf(param, "%d", &num) && num >= 8)
                     {
-                        GlobalUtil::_texMinDim = num; 
+                        GlobalUtil::_texMinDim = num;
                     }
                     break;
-                } 
+                }
             default:
                 break;
-            }	        
+            }
             break;
         }
 	}
@@ -1158,7 +1163,7 @@ void SiftGPU::ParseParam(int argc, char **argv)
 	//do not write result if there are more than one input images
 	if(_outpath[0] && _list->size()>1)		_outpath[0] = 0;
 
-} 
+}
 
 void SiftGPU::SetImageList(int nimage, const char** filelist)
 {
@@ -1243,7 +1248,7 @@ void SiftGPUEX::DisplayFeatureBox(int view )
 					glFlush();
 				}else
 				{
-						
+
 					//glColor3f(1.0f, 0.0f, 0.0f);
 					glColor3fv(_colors+ (idx%COLOR_NUM)*3);
 					glBindBuffer(GL_ARRAY_BUFFER_ARB, vbo[idx]);
@@ -1253,7 +1258,7 @@ void SiftGPUEX::DisplayFeatureBox(int view )
 				}
 
 			}
-		
+
 		}
 		glTranslatef(-.5f, -.5f, 0.0f);
 		glScalef(2.0f, 2.0f, 1.0f);
@@ -1263,7 +1268,7 @@ void SiftGPUEX::DisplayFeatureBox(int view )
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glPointSize(1.0f);
-							
+
 }
 
 void SiftGPUEX::ToggleDisplayDebug()
@@ -1291,7 +1296,7 @@ int SiftGPU::CreateContextGL()
     {
         //do nothing
     }
-    else if(!GlobalUtil::CreateWindowEZ()) 
+    else if(!GlobalUtil::CreateWindowEZ())
     {
 #if CUDA_SIFTGPU_ENABLED
 		GlobalUtil::_UseCUDA = 1;
@@ -1425,16 +1430,15 @@ SiftGPU* CreateNewSiftGPU(int np)
 /////////////////////////////////////////////////////
 void* ComboSiftGPU::operator new (size_t  size){
   void * p = malloc(size);
-  if (p == 0)  
+  if (p == 0)
   {
 	  const std::bad_alloc ba;
-	  throw ba; 
+	  throw ba;
   }
-  return p; 
+  return p;
 }
 
 ComboSiftGPU* CreateComboSiftGPU()
 {
 	return new ComboSiftGPU();
 }
-
